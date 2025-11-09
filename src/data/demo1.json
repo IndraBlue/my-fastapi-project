@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "name": "Indra",
+    "age": 25,
+    "role": "UI Developer"
+  },
+  {
+    "id": 3,
+    "name": "Dhar",
+    "age": 24,
+    "role": "Dev OPS Developer"
+  },
+  {
+    "id": 4,
+    "name": "Soumyajyoti",
+    "age": 23,
+    "role": "DOT NET Developer"
+  },
+  {
+    "id": 5,
+    "name": "SKundu",
+    "age": 28,
+    "role": "UI Developer"
+  },
+  {
+    "id": 6,
+    "name": "Krish",
+    "age": 30,
+    "role": "Infra Mangement"
+  },
+  {
+    "id": 7,
+    "name": "Kalyan",
+    "age": 30,
+    "role": "API Mangement"
+  },
+  {
+    "id": 8,
+    "name": "Shiv",
+    "age": 27,
+    "role": "Frontend Integration"
+  },
+  {
+    "id": 8,
+    "name": "Dibyo",
+    "age": 25,
+    "role": "DOT NET Developer"
+  }
+]
