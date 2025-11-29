@@ -1,4 +1,4 @@
-from fastapi import Body, FastAPI, Query
+from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +19,7 @@ app.add_middleware(
 
 
 DATA_PATH = "src/data/demo1.json"
+LOGIN_DATA="src/data/users.json"
 
 
 class EMPLOYEE_BASE(BaseModel):
@@ -26,6 +27,12 @@ class EMPLOYEE_BASE(BaseModel):
     name:str
     age:int
     role:str
+
+class LOGIN_BASE(BaseModel):
+    userName:str
+    password:str
+
+
 
 def load_data():
     """Load data from JSON file with error handling."""
@@ -49,6 +56,39 @@ def load_data():
             )
 
         return data
+
+    except json.JSONDecodeError as e:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Invalid JSON format: {str(e)}"}
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Unexpected error loading JSON: {str(e)}"}
+        )
+
+def login_data():
+    try:
+        # Check if file exists
+        if not os.path.exists(LOGIN_DATA):
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"File '{LOGIN_DATA}' not found"}
+            )
+
+        # Try reading and parsing the JSON
+        with open(LOGIN_DATA, "r") as file:
+            dataLogin = json.load(file)
+
+        # Validate data type
+        if not isinstance(dataLogin, list):
+            return JSONResponse(
+                status_code=400,
+                content={"error": "JSON file does not contain a list of users"}
+            )
+
+        return dataLogin
 
     except json.JSONDecodeError as e:
         return JSONResponse(
@@ -134,3 +174,20 @@ def delete_employee(name: str = Query(...)):
             status_code=500,
             content={"error": f"Error deleting employee: {str(e)}"}
         )
+
+
+@app.post("/login")
+def login(request: LOGIN_BASE):
+    users = login_data()
+
+    # Find user
+    user = next((u for u in users if u["userName"] == request.userName), None)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    # Compare plain text password
+    if user["password"] != request.password:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    # Return success (or JWT if you want)
+    return {"message": "Login successful", "user": request.userName}
