@@ -147,6 +147,41 @@ def add_employee(employee: EMPLOYEE_BASE = Body(...)):
             status_code=500,
             content={"error": f"Error saving employee: {str(e)}"}
         )
+    
+@app.put("/editEmployee")
+def edit_employee(id: int = Query(...), updated_employee: EMPLOYEE_BASE = Body(...)):
+    """Edit an existing employee by ID."""
+    data = load_data()
+    if isinstance(data, JSONResponse):
+        return data
+
+    try:
+        # Find employee by ID
+        for index, emp in enumerate(data):
+            if emp.get("id") == id:
+                # Replace with updated data
+                data[index] = updated_employee.model_dump()
+
+                # Save back to file
+                with open(DATA_PATH, "w") as file:
+                    json.dump(data, file, indent=2)
+
+                return {
+                    "message": f"Employee with ID {id} updated successfully",
+                    "employee": updated_employee
+                }
+
+        # If not found
+        return JSONResponse(
+            status_code=404,
+            content={"error": f"No employee found with ID {id}"}
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error updating employee: {str(e)}"}
+        )
 
 @app.delete("/removeEmployees")
 def delete_employee(name: str = Query(...)):
