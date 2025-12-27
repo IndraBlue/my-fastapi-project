@@ -31,6 +31,7 @@ class EMPLOYEE_BASE(BaseModel):
 class LOGIN_BASE(BaseModel):
     userName:str
     password:str
+    
 
 
 
@@ -225,4 +226,4 @@ def login(request: LOGIN_BASE):
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     # Return success (or JWT if you want)
-    return {"message": "Login successful", "user": request.userName}
+    return {"message": "Login successful", "user": request.userName, "picture":user.get("profilePicture")}

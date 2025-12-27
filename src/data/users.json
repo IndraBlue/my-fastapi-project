@@ -1,10 +1,12 @@
 [
     {
         "userName": "admin",
-        "password": "admin1234"
+        "password": "admin1234",
+        "profilePicture":"https://stimg.cardekho.com/images/carexteriorimages/630x420/Tata/Curvv-EV/8935/1755844730329/front-left-side-47.jpg?tr=w-664"
     },
     {
         "userName": "user",
-        "password": "user1234"
+        "password": "user1234",
+        "profilePicture":"https://img.autocarpro.in/autocarpro/2c89f090-ddab-47d1-b0af-41c4dc99a481_20240131032712_Tata_Curvv_EV.jpg?w=750&h=490&q=75&c=1"
     }
 ]
