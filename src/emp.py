@@ -27,6 +27,7 @@ class EMPLOYEE_BASE(BaseModel):
     name:str
     age:int
     role:str
+    email:str
 
 class LOGIN_BASE(BaseModel):
     userName:str

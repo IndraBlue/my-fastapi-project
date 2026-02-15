@@ -3,60 +3,70 @@
     "id": 1,
     "name": "Indra",
     "age": 25,
-    "role": "UI Developer"
+    "role": "UI Developer",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 3,
     "name": "SDhar",
     "age": 24,
-    "role": "Dev OPS Developer"
+    "role": "Dev OPS Developer",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 4,
     "name": "Soumyajyoti",
     "age": 23,
-    "role": "DOT NET Developer"
+    "role": "DOT NET Developer",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 5,
     "name": "SKundu",
     "age": 28,
-    "role": "UI Developer"
+    "role": "UI Developer",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 6,
     "name": "Krish",
     "age": 30,
-    "role": "Infra Mangement"
+    "role": "Infra Mangement",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 7,
     "name": "Kalyan",
     "age": 30,
-    "role": "API Mangement"
+    "role": "API Mangement",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 8,
     "name": "Shiv",
     "age": 27,
-    "role": "Frontend Integration"
+    "role": "Frontend Integration",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 8,
     "name": "Dibyo",
     "age": 25,
-    "role": "DOT NET Developer"
+    "role": "DOT NET Developer",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 0,
     "name": "string",
     "age": 0,
-    "role": "string"
+    "role": "string",
+    "email":"indranilgarani278@gmail.com"
   },
   {
     "id": 234,
     "name": "Jhon",
     "age": 35,
-    "role": "Admin"
+    "role": "Admin",
+    "email":"indranilgarani278@gmail.com"
   }
 ]
