@@ -4,69 +4,97 @@
     "name": "Indra",
     "age": 25,
     "role": "UI Developer",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 3,
     "name": "SDhar",
     "age": 24,
     "role": "Dev OPS Developer",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 4,
     "name": "Soumyajyoti",
     "age": 23,
     "role": "DOT NET Developer",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 5,
     "name": "SKundu",
     "age": 28,
     "role": "UI Developer",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 6,
     "name": "Krish",
     "age": 30,
     "role": "Infra Mangement",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 7,
     "name": "Kalyan",
     "age": 30,
     "role": "API Mangement",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 8,
     "name": "Shiv",
     "age": 27,
     "role": "Frontend Integration",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 8,
     "name": "Dibyo",
     "age": 25,
     "role": "DOT NET Developer",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 0,
     "name": "string",
     "age": 0,
     "role": "string",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
   },
   {
     "id": 234,
     "name": "Jhon",
     "age": 35,
     "role": "Admin",
-    "email":"indranilgarani278@gmail.com"
+    "email": "indranilgarani278@gmail.com"
+  },
+  {
+    "id": 11,
+    "name": "Tom",
+    "age": 40,
+    "role": "CTO",
+    "email": "igarani1999@gmail.com"
+  },
+  {
+    "id": 12,
+    "name": "Kendal",
+    "age": 35,
+    "role": "Co COO",
+    "email": "igarani1999@gmail.com"
+  },
+  {
+    "id": 13,
+    "name": "Greg",
+    "age": 30,
+    "role": "MD",
+    "email": "igarani1999@gmail.com"
+  },
+  {
+    "id": 14,
+    "name": "Conor",
+    "age": 56,
+    "role": "Politician",
+    "email": "igarani1999@gmail.com"
   }
 ]

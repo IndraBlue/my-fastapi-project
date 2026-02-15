@@ -1,4 +1,4 @@
-from fastapi import Body, FastAPI, HTTPException, Query
+from fastapi import Body, FastAPI, HTTPException, Query,BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,8 +6,27 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
 
+from dotenv import load_dotenv
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+
+# Load the variables from the .env file
+load_dotenv()
+
 
 app = FastAPI()
+
+
+conf = ConnectionConfig(
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+    MAIL_FROM=os.getenv("MAIL_FROM"),
+    MAIL_PORT=587,
+    MAIL_SERVER="smtp.gmail.com",
+    MAIL_STARTTLS=True,   # Must be True for Port 587
+    MAIL_SSL_TLS=False,   # Must be False when using STARTTLS/587
+    USE_CREDENTIALS=True,
+    VALIDATE_CERTS=True
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,6 +51,18 @@ class EMPLOYEE_BASE(BaseModel):
 class LOGIN_BASE(BaseModel):
     userName:str
     password:str
+
+
+
+async def send_welcome_email(email_to: str, name: str):
+    message = MessageSchema(
+        subject="Registration Alert",
+        recipients=[email_to],
+        body=f"{name} has registered to the system!",
+        subtype=MessageType.plain
+    )
+    fm = FastMail(conf)
+    await fm.send_message(message)
     
 
 
@@ -130,7 +161,7 @@ def get_employees(role: str = Query(None), min_age: int = Query(None)):
         )
     
 @app.post("/addEmployees")
-def add_employee(employee: EMPLOYEE_BASE = Body(...)):
+def add_employee(background_tasks: BackgroundTasks,employee: EMPLOYEE_BASE = Body(...)):
     """Add a new employee to the JSON file."""
     data = load_data()
     if isinstance(data, JSONResponse):
@@ -141,6 +172,9 @@ def add_employee(employee: EMPLOYEE_BASE = Body(...)):
 
         with open(DATA_PATH, "w") as file:
             json.dump(data, file, indent=2)
+
+        if hasattr(employee, 'email'):
+            background_tasks.add_task(send_welcome_email, employee.email, employee.name)
 
         return {"message": "Employee added successfully", "employee": employee}
 
