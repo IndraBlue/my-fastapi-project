@@ -1,21 +1,31 @@
-from fastapi import Body, FastAPI, HTTPException, Query,BackgroundTasks
+import json
+import sqlite3
+import os
+from fastapi import FastAPI, Body, HTTPException, Query, BackgroundTasks
 from fastapi.responses import JSONResponse
+app = FastAPI()
+
+# 1. Update your DB Path to match your file name
+DB_PATH = r"C:\Users\indra\myDB.db" 
+
+
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-
-import json
-import os
-
 from dotenv import load_dotenv
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 
-# Load the variables from the .env file
 load_dotenv()
 
 
-app = FastAPI()
 
 
+def get_db_connection():
+    print(f"Connecting to database at: {os.path.abspath(DB_PATH)}")
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row 
+    return conn
+
+# --- FASTMAIL CONFIG (Your Original Method) ---
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
     MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
@@ -28,6 +38,7 @@ conf = ConnectionConfig(
     VALIDATE_CERTS=True
 )
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Or specify ["http://localhost:3000"] for React, etc.
@@ -35,71 +46,64 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-DATA_PATH = "src/data/demo1.json"
 LOGIN_DATA="src/data/users.json"
-
-
 class EMPLOYEE_BASE(BaseModel):
-    id:int
-    name:str
-    age:int
-    role:str
-    email:str
+    id: str  
+    name: str
+    age: int
+    role: str
+    email: str
 
 class LOGIN_BASE(BaseModel):
     userName:str
     password:str
 
+# --- ENDPOINTS ---
 
 
+# --- THE MAIL FUNCTION (Async as per FastMail requirements) ---
 async def send_welcome_email(email_to: str, name: str):
+    """Sends email via FastMail SMTP (Gmail)"""
     message = MessageSchema(
         subject="Registration Alert",
         recipients=[email_to],
-        body=f"{name} has registered to the system!",
+        body=f"Hello {name}, your profile was created successfully in the system!",
         subtype=MessageType.plain
     )
     fm = FastMail(conf)
     await fm.send_message(message)
+
+
+
+@app.get("/debug-db")
+def debug_db():
+    try:
+        # Check if the file actually exists at that path
+        if not os.path.exists(DB_PATH):
+            return {
+                "status": "ERROR",
+                "message": "File not found at the path provided",
+                "path_searched": DB_PATH
+            }
+
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Look for the table names
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = [t[0] for t in cursor.fetchall()]
+        conn.close()
+        
+        return {
+            "status": "Success",
+            "db_path": DB_PATH,
+            "file_size_kb": os.path.getsize(DB_PATH) / 1024,
+            "tables_found": tables
+        }
+    except Exception as e:
+        return {"status": "Crash", "details": str(e)}
     
 
-
-
-def load_data():
-    """Load data from JSON file with error handling."""
-    try:
-        # Check if file exists
-        if not os.path.exists(DATA_PATH):
-            return JSONResponse(
-                status_code=404,
-                content={"error": f"File '{DATA_PATH}' not found"}
-            )
-
-        # Try reading and parsing the JSON
-        with open(DATA_PATH, "r") as file:
-            data = json.load(file)
-
-        # Validate data type
-        if not isinstance(data, list):
-            return JSONResponse(
-                status_code=400,
-                content={"error": "JSON file does not contain a list of employees"}
-            )
-
-        return data
-
-    except json.JSONDecodeError as e:
-        return JSONResponse(
-            status_code=400,
-            content={"error": f"Invalid JSON format: {str(e)}"}
-        )
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Unexpected error loading JSON: {str(e)}"}
-        )
 
 def login_data():
     try:
@@ -133,118 +137,112 @@ def login_data():
             status_code=500,
             content={"error": f"Unexpected error loading JSON: {str(e)}"}
         )
+    
+
+
 
 @app.get("/employees")
 def get_employees(role: str = Query(None), min_age: int = Query(None)):
-    """Fetch and filter employees with error handling."""
-    data = load_data()
-
-    # If load_data() returned a JSONResponse (error), just return it directly
-    if isinstance(data, JSONResponse):
-        return data
-
-    try:
-        # Filter by role
-        if role:
-            data = [emp for emp in data if emp.get("role", "").lower() == role.lower()]
-
-        # Filter by minimum age
-        if min_age is not None:
-            data = [emp for emp in data if emp.get("age", 0) >= min_age]
-
-        return {"total": len(data), "employees": data}
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Error filtering data: {str(e)}"}
-        )
+    conn = get_db_connection()
+    cursor = conn.cursor()
     
+    # Use double quotes for table names with spaces
+    query = 'SELECT * FROM "Details Table" WHERE 1=1'
+    params = []
+    
+    if role:
+        query += " AND LOWER(role) = ?"
+        params.append(role.lower())
+    if min_age is not None:
+        query += " AND age >= ?"
+        params.append(min_age)
+        
+    cursor.execute(query, params)
+    employees = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return {"total": len(employees), "employees": employees}
+
 @app.post("/addEmployees")
-def add_employee(background_tasks: BackgroundTasks,employee: EMPLOYEE_BASE = Body(...)):
-    """Add a new employee to the JSON file."""
-    data = load_data()
-    if isinstance(data, JSONResponse):
-        return data
-
+async def add_employee(background_tasks: BackgroundTasks, employee: EMPLOYEE_BASE = Body(...)):
+    """Add employee to SQLite and trigger FastMail background task."""
+    conn = get_db_connection()
     try:
-        data.append(employee.model_dump())
-
-        with open(DATA_PATH, "w") as file:
-            json.dump(data, file, indent=2)
-
-        if hasattr(employee, 'email'):
+        cursor = conn.cursor()
+        
+        # SQL Insert for "Details Table"
+        cursor.execute(
+            'INSERT INTO "Details Table" (id, name, age, role, email) VALUES (?, ?, ?, ?, ?)',
+            (employee.id, employee.name, employee.age, employee.role, employee.email)
+        )
+        conn.commit()
+        
+        # Trigger your original FastMail method
+        if employee.email:
             background_tasks.add_task(send_welcome_email, employee.email, employee.name)
 
-        return {"message": "Employee added successfully", "employee": employee}
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Error saving employee: {str(e)}"}
-        )
+        return {"message": "Employee added and email queued", "employee": employee}
     
-@app.put("/editEmployee")
-def edit_employee(id: int = Query(...), updated_employee: EMPLOYEE_BASE = Body(...)):
-    """Edit an existing employee by ID."""
-    data = load_data()
-    if isinstance(data, JSONResponse):
-        return data
-
-    try:
-        # Find employee by ID
-        for index, emp in enumerate(data):
-            if emp.get("id") == id:
-                # Replace with updated data
-                data[index] = updated_employee.model_dump()
-
-                # Save back to file
-                with open(DATA_PATH, "w") as file:
-                    json.dump(data, file, indent=2)
-
-                return {
-                    "message": f"Employee with ID {id} updated successfully",
-                    "employee": updated_employee
-                }
-
-        # If not found
-        return JSONResponse(
-            status_code=404,
-            content={"error": f"No employee found with ID {id}"}
-        )
-
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail=f"Employee ID {employee.id} already exists.")
     except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Error updating employee: {str(e)}"}
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
+
+
+@app.put("/editEmployee")
+def edit_employee(id: str = Query(...), updated_employee: EMPLOYEE_BASE = Body(...)):
+    """
+    Edit an existing employee by ID in the SQLite 'Details Table'.
+    Note: We use double quotes around "Details Table" because of the space in the name.
+    """
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # SQL UPDATE statement
+        # We update by the 'id' passed in the Query parameter
+        cursor.execute(
+            'UPDATE "Details Table" SET name=?, age=?, role=?, email=? WHERE id=?',
+            (
+                updated_employee.name, 
+                updated_employee.age, 
+                updated_employee.role, 
+                updated_employee.email, 
+                id
+            )
         )
+        
+        conn.commit()
+        
+        # Check if any row was actually changed
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail=f"No employee found with ID {id}")
+            
+        return {
+            "message": f"Employee {id} updated successfully", 
+            "employee": updated_employee
+        }
+        
+    except Exception as e:
+        # Catch-all for database errors
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        conn.close()
 
 @app.delete("/removeEmployees")
 def delete_employee(name: str = Query(...)):
-    """Delete an employee by name."""
-    data = load_data()
-    if isinstance(data, JSONResponse):
-        return data
-
-    try:
-        original_count = len(data)
-        data = [emp for emp in data if emp.get("name", "").lower() != name.lower()]
-        if len(data) == original_count:
-            return JSONResponse(
-                status_code=404,
-                content={"error": f"No employee found with name '{name}'"}
-            )
-
-        with open(DATA_PATH, "w") as file:
-            json.dump(data, file, indent=2)
-
-        return {"message": f"Employee '{name}' deleted successfully", "remaining": len(data)}
-
-    except Exception as e:
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"Error deleting employee: {str(e)}"}
-        )
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM "Details Table" WHERE LOWER(name) = ?', (name.lower(),))
+    conn.commit()
+    
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Employee not found")
+        
+    conn.close()
+    return {"message": f"Deleted {name}"}
 
 
 @app.post("/login")
