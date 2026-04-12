@@ -53,6 +53,10 @@ class EMPLOYEE_BASE(BaseModel):
     age: int
     role: str
     email: str
+    m_id:str
+    salary:int
+    allowances:int
+    insurance:int
 
 class LOGIN_BASE(BaseModel):
     userName:str
@@ -162,6 +166,21 @@ def get_employees(role: str = Query(None), min_age: int = Query(None)):
     conn.close()
     return {"total": len(employees), "employees": employees}
 
+@app.get("/findManager")
+def get_Manager(id:str=Query(...)):
+    conn = get_db_connection()
+    cursor =conn.cursor()
+    if id:
+        query = 'SELECT DT.id, DT.name, MT.manager_name FROM "Details Table" as DT LEFT JOIN "Manager Table" as MT ON DT.m_id = MT.manager_id WHERE DT.id = ?'
+        cursor.execute(query,(id,))
+    else:
+        raise HTTPException(status_code=422, detail="Need a to provide id")
+    
+    
+    mDetails =[dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return {"mdata":mDetails}
+
 @app.post("/addEmployees")
 async def add_employee(background_tasks: BackgroundTasks, employee: EMPLOYEE_BASE = Body(...)):
     """Add employee to SQLite and trigger FastMail background task."""
@@ -171,9 +190,13 @@ async def add_employee(background_tasks: BackgroundTasks, employee: EMPLOYEE_BAS
         
         # SQL Insert for "Details Table"
         cursor.execute(
-            'INSERT INTO "Details Table" (id, name, age, role, email) VALUES (?, ?, ?, ?, ?)',
-            (employee.id, employee.name, employee.age, employee.role, employee.email)
+            'INSERT INTO "Details Table" (id, name, age, role, email,m_id) VALUES (?, ?, ?, ?, ?, ?)',
+            (employee.id, employee.name, employee.age, employee.role, employee.email, employee.m_id)
         )
+
+        cursor.execute(
+            'INSERT INTO "Salary Table" (emp_id,emp_name,basicSalary,allowences,insurance) VALUES (?, ?, ?, ?, ?)',
+                       (employee.id,employee.name,employee.salary,employee.allowances, employee.insurance))
         conn.commit()
         
         # Trigger your original FastMail method
@@ -203,12 +226,13 @@ def edit_employee(id: str = Query(...), updated_employee: EMPLOYEE_BASE = Body(.
         # SQL UPDATE statement
         # We update by the 'id' passed in the Query parameter
         cursor.execute(
-            'UPDATE "Details Table" SET name=?, age=?, role=?, email=? WHERE id=?',
+            'UPDATE "Details Table" SET name=?, age=?, role=?, email=?, m_id=? WHERE id=?',
             (
                 updated_employee.name, 
                 updated_employee.age, 
                 updated_employee.role, 
-                updated_employee.email, 
+                updated_employee.email,
+                updated_employee.m_id,
                 id
             )
         )
