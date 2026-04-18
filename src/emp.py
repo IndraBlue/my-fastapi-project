@@ -166,20 +166,47 @@ def get_employees(role: str = Query(None), min_age: int = Query(None)):
     conn.close()
     return {"total": len(employees), "employees": employees}
 
+
+
 @app.get("/findManager")
-def get_Manager(id:str=Query(...)):
+def get_Manager(id: str = Query(...)):
     conn = get_db_connection()
-    cursor =conn.cursor()
-    if id:
-        query = 'SELECT DT.id, DT.name, MT.manager_name FROM "Details Table" as DT LEFT JOIN "Manager Table" as MT ON DT.m_id = MT.manager_id WHERE DT.id = ?'
-        cursor.execute(query,(id,))
-    else:
-        raise HTTPException(status_code=422, detail="Need a to provide id")
+    conn.row_factory = sqlite3.Row 
+    cursor = conn.cursor()
     
-    
-    mDetails =[dict(row) for row in cursor.fetchall()]
-    conn.close()
-    return {"mdata":mDetails}
+    try:
+        # Step 1: Manager Query
+        query1 = 'SELECT DT.id, DT.name, MT.manager_name FROM "Details Table" AS DT LEFT JOIN "Manager Table" AS MT ON DT.m_id = MT.manager_id WHERE DT.id = ?'
+        cursor.execute(query1, (id,))
+        manager_row = cursor.fetchone()
+        
+        if not manager_row:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        result = dict(manager_row)
+
+        # Step 2: Assets Query
+        query2 = """
+            SELECT AT.assetID, AT.assetModel, AT.assignedName, DT.id, AT.warrantyUpto, 
+            (AT.warrantyUpto > DATE('now')) AS warrantyValid  
+            FROM "Asset Table" AS AT 
+            LEFT JOIN "Details Table" AS DT ON AT.assignedID = DT.id 
+            WHERE DT.id = ?
+        """
+        cursor.execute(query2, (id,))
+        asset_rows = cursor.fetchall()
+
+        # --- DEBUG PRINT ---
+        print(f"DEBUG: Found {len(asset_rows)} assets for ID {id}")
+        for r in asset_rows:
+            print(f"DEBUG: Asset Found - {r['assetID']}")
+        # -------------------
+
+        result["assets"] = [dict(row) for row in asset_rows]
+        return {"mdata": result}
+
+    finally:
+        conn.close()
 
 @app.post("/addEmployees")
 async def add_employee(background_tasks: BackgroundTasks, employee: EMPLOYEE_BASE = Body(...)):
