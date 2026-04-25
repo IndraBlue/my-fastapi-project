@@ -62,6 +62,13 @@ class LOGIN_BASE(BaseModel):
     userName:str
     password:str
 
+class ASSET_BASE(BaseModel):
+    assetID:str
+    assetModel:str
+    assignedID:str
+    assignedName:str
+    warrantyUpto:str
+
 # --- ENDPOINTS ---
 
 
@@ -294,6 +301,22 @@ def delete_employee(name: str = Query(...)):
         
     conn.close()
     return {"message": f"Deleted {name}"}
+
+@app.post("/assignAsset")
+def assign_asset(background_task:BackgroundTasks,assetData:ASSET_BASE=Body(...)):
+    conn = get_db_connection()
+    try:
+        cursor=conn.cursor()
+        cursor.execute("""INSERT INTO "Asset Table" (assetID, assetModel, assignedID, assignedName, warrantyUpto) VALUES (?, ?, ?, ?, ?)""",
+                            (assetData.assetID,assetData.assetModel,assetData.assignedID,assetData.assignedName,assetData.warrantyUpto)
+                        )
+        conn.commit()
+
+        return{"message":"Asset assigned", "assetDetails":assetData}
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=400, detail="Bad Request")
+    except Exception as e:
+        raise HTTPException(status_code=500,detail="Internal server error")
 
 
 @app.post("/login")
